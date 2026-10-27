@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
+    function isApprovedGuardian(patientId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(patientId)/guardians/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(patientId)/guardians/$(request.auth.uid)).data.status == 'ACCEPTED';
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email;
+      allow read: if isOwner(userId) || isApprovedGuardian(userId);
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      allow delete: if isOwner(userId);
+
+      match /devices/{deviceId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.fid == deviceId
+          && request.resource.data.platform == 'android';
+      }
+      match /guardians/{guardianUid} {
+        allow read: if isOwner(userId) || request.auth.uid == guardianUid;
+        allow write: if false; // Cloud Functions만 관계 상태를 변경한다.
+      }
+      match /patients/{patientId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /guardianInvites/{inviteId} {
+      allow read: if signedIn() && (request.auth.uid == resource.data.patientUid || request.auth.uid == resource.data.guardianUid);
+      allow write: if false; // 초대·수락은 callable Functions로만 처리한다.
+    }
+
+    match /alerts/{alertId} {
+      allow create: if signedIn()
+        && request.resource.data.patientId == request.auth.uid
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.source == 'android'
+        && request.resource.data.type in ['SOS', 'VOICE', 'VIDEO']
+        && request.resource.data.status == 'OPEN';
+      allow read: if signedIn() && (request.auth.uid == resource.data.patientId || isApprovedGuardian(resource.data.patientId));
+      allow update, delete: if false; // 서버만 전달 상태를 기록한다.
+      match /{nestedDocument=**} { allow read, write: if false; }
+    }
+
+    match /piDevices/{deviceId} {
+      allow read, write: if false; // sharedSecret은 Cloud Functions에서만 접근한다.
+    }
+  }
+}

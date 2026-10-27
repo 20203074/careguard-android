@@ -1,0 +1,8 @@
+{
+  "_comment": "Firebase Console에서 내려받은 실제 google-services.json으로 이 파일을 교체하세요. 실제 파일은 Git에 커밋하지 마세요.",
+  "project_info": {
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.firebasestorage.app"
+  }
+}

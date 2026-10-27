@@ -1,0 +1,4 @@
+<resources>
+    <!-- Firebase Functions 배포 리전과 맞춰야 합니다. -->
+    <string name="firebase_functions_region">asia-northeast3</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CareGuard</string>
+    <string name="notification_channel_name">보호자 안전 알림</string>
+    <string name="notification_channel_description">낙상, SOS, 위험 음성에 대한 보호자 알림입니다.</string>
+</resources>
